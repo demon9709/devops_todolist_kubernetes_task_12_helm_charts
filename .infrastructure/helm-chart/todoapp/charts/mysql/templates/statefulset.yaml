@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Chart.Name }}-statefulset
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    app: {{ .Chart.Name }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  serviceName: {{ .Chart.Name }}-service
+  selector:
+    matchLabels:
+      app: {{ .Chart.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Chart.Name }}
+    spec:
+      affinity:
+{{- toYaml .Values.affinity | nindent 8 }}
+      tolerations:
+{{- toYaml .Values.tolerations | nindent 8 }}
+      containers:
+      - name: {{ .Chart.Name }}
+        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        env:
+{{- range $key, $value := .Values.secrets }}
+        - name: {{ $key }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ $.Chart.Name }}-secret
+              key: {{ $key }}
+{{- end }}
+        resources:
+          requests:
+            memory: {{ .Values.resources.requests.memory }}
+            cpu: {{ .Values.resources.requests.cpu }}
+          limits:
+            memory: {{ .Values.resources.limits.memory }}
+            cpu: {{ .Values.resources.limits.cpu }}
+        volumeMounts:
+        - name: mysql-storage
+          mountPath: /var/lib/mysql
+  volumeClaimTemplates:
+  - metadata:
+      name: mysql-storage
+    spec:
+      accessModes:
+{{- range .Values.persistentVolumeClaim.accessModes }}
+        - {{ . }}
+{{- end }}
+      resources:
+        requests:
+          storage: {{ .Values.persistentVolumeClaim.storage }}

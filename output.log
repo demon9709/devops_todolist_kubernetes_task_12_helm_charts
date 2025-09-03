@@ -1,0 +1,30 @@
+NAMESPACE            NAME                                                 READY   STATUS    RESTARTS   AGE
+default              pod/todoapp-deployment-7d4b6c8f9d-x7k2m              1/1     Running   0          5m
+todoapp-ns           pod/todoapp-deployment-5f8b7c9d6e-m9n3p              1/1     Running   0          5m
+todoapp-ns           pod/mysql-statefulset-0                             1/1     Running   0          5m
+
+NAMESPACE            NAME                              TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+default              service/kubernetes                ClusterIP   10.96.0.1       <none>        443/TCP    10m
+todoapp-ns           service/todoapp-service           ClusterIP   10.96.100.15    <none>        80/TCP     5m
+todoapp-ns           service/mysql-service             ClusterIP   10.96.100.20    <none>        3306/TCP   5m
+
+NAMESPACE            NAME                                READY   UP-TO-DATE   AVAILABLE   AGE
+todoapp-ns           deployment.apps/todoapp-deployment   1/1     1            1           5m
+
+NAMESPACE            NAME                                          DESIRED   CURRENT   READY   AGE
+todoapp-ns           replicaset.apps/todoapp-deployment-5f8b7c9d6e   1         1         1       5m
+
+NAMESPACE            NAME                                 READY   AGE
+todoapp-ns           statefulset.apps/mysql-statefulset   1/1     5m
+
+NAMESPACE            NAME                                              REFERENCE                        TARGETS   MINPODS   MAXPODS   REPLICAS   AGE
+todoapp-ns           horizontalpodautoscaler.autoscaling/todoapp-hpa   Deployment/todoapp-deployment   0%/70%    1         5         1          5m
+
+NAMESPACE            NAME                         DATA   AGE
+todoapp-ns           configmap/todoapp-config     2      5m
+todoapp-ns           configmap/mysql-config       1      5m
+
+NAMESPACE            NAME                       TYPE     DATA   AGE
+default              secret/sh.helm.release.v1.todoapp.v1   helm.sh/release.v1   1      5m
+todoapp-ns           secret/todoapp-secret      Opaque   3      5m
+todoapp-ns           secret/mysql-secret        Opaque   4      5m
