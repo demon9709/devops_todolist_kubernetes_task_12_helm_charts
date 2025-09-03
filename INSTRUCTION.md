@@ -1,78 +1,73 @@
 # TodoApp Helm Chart Deployment Instructions
 
+
 ## Prerequisites
 - Docker installed and running
 - kubectl installed
 - helm installed
 - kind installed
 
+
 ## Validation Steps
 
+# Считать namespace из values.yaml
+NS=$(yq eval '.namespace.name' ./helm-chart/todoapp/values.yaml)
+
+
 ### 1. Execute Bootstrap Script
-```bash
 chmod +x bootstrap.sh
 ./bootstrap.sh
-```
+
 
 ### 2. Verify Cluster Creation
-```bash
 kubectl cluster-info
 kubectl get nodes --show-labels
-```
+
 
 ### 3. Check Node Taints
-```bash
 kubectl describe nodes | grep -E "(Name:|Taints:)" -A 1
-```
+
 Verify that nodes labeled with `app=mysql` have `app=mysql:NoSchedule` taint.
 
 ### 4. Verify Helm Chart Deployment
-```bash
 helm list -A
-kubectl get all -n todoapp-ns
-```
+kubectl get all -n $NS
+
 
 ### 5. Check Dependencies
-```bash
 helm dependency list ./helm-chart/todoapp
-```
+
 
 ### 6. Verify MySQL StatefulSet
-```bash
-kubectl get statefulset -n todoapp-ns
-kubectl get pvc -n todoapp-ns
-```
+kubectl get statefulset -n $NS
+kubectl get pvc -n $NS
+
 
 ### 7. Verify TodoApp Deployment
-```bash
-kubectl get deployment -n todoapp-ns
-kubectl get hpa -n todoapp-ns
-```
+kubectl get deployment -n $NS
+kubectl get hpa -n $NS
+
 
 ### 8. Check Secrets
-```bash
-kubectl get secrets -n todoapp-ns
-kubectl describe secret todoapp-secret -n todoapp-ns
-kubectl describe secret mysql-secret -n todoapp-ns
-```
+kubectl get secrets -n $NS
+kubectl describe secret todoapp-secret -n $NS
+kubectl describe secret mysql-secret -n $NS
+
 
 ### 9. Verify RBAC
-```bash
-kubectl get serviceaccount -n todoapp-ns
-kubectl get role -n todoapp-ns
-kubectl get rolebinding -n todoapp-ns
-```
+kubectl get serviceaccount -n $NS
+kubectl get role -n $NS
+kubectl get rolebinding -n $NS
+
 
 ### 10. Check Pod Scheduling
-```bash
-kubectl get pods -n todoapp-ns -o wide
-```
+kubectl get pods -n $NS -o wide
+
 Verify that MySQL pods are scheduled on nodes with `app=mysql` label and TodoApp pods respect node affinity.
 
 ### 11. View Complete Resource List
-```bash
 cat output.log
-```
+
 
 ## Expected Results
 - Kind cluster with 1 control-plane and 2 worker nodes
@@ -85,15 +80,15 @@ cat output.log
 - PV and PVC created and bound
 - All resources use Chart.Name as prefix
 
+
 ## Cleanup
-```bash
-helm uninstall todoapp -n todoapp-ns
-kubectl delete namespace todoapp-ns
+helm uninstall todoapp -n $NS
+kubectl delete namespace $NS
 kind delete cluster --name todoapp-cluster
-```
+
 
 ## Troubleshooting
 - If pods are pending, check node affinity and taints
 - If MySQL fails to start, check PVC binding
 - If secrets are missing, verify values.yaml configuration
-- Check pod logs: `kubectl logs <pod-name> -n todoapp-ns`
+- Check pod logs: `kubectl logs <pod-name> -n $NS`

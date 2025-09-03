@@ -15,7 +15,7 @@ kubectl get nodes --show-labels
 kubectl describe nodes | grep -E "(Name:|Taints:|Labels:)" -A 2
 
 echo "4. Adding taint to MySQL nodes..."
-kubectl taint nodes $(kubectl get nodes -l app=mysql -o jsonpath='{.items[0].metadata.name}') app=mysql:NoSchedule
+kubectl get nodes -l app=mysql -o name | xargs -I{} kubectl taint {} app=mysql:NoSchedule --overwrite
 
 echo "5. Verifying taints..."
 kubectl describe nodes | grep -E "(Name:|Taints:)" -A 1
@@ -25,14 +25,4 @@ cd helm-chart/todoapp
 helm dependency build
 cd ../..
 
-echo "7. Deploying TodoApp helm chart..."
-helm install todoapp ./helm-chart/todoapp --create-namespace
-
-echo "8. Waiting for deployments..."
-kubectl wait --for=condition=available deployment -l app=todoapp -n todoapp-ns --timeout=300s
-
-echo "9. Getting all resources..."
-kubectl get all,cm,secret,ing -A > output.log
-
-echo "=== Deployment Complete ==="
-echo "Check output.log for all deployed resources"
+echo "7. Reading namespace from values.yaml

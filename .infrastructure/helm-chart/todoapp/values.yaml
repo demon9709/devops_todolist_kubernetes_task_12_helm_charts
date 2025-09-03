@@ -16,6 +16,12 @@ resources:
     memory: "512Mi"
     cpu: "500m"
 
+persistentVolume:
+  capacity: 2Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath: /mnt/data
+
 persistentVolumeClaim:
   storage: 2Gi
   accessModes:
@@ -23,22 +29,38 @@ persistentVolumeClaim:
 
 affinity:
   nodeAffinity:
+    key: app
+    values:
+      - mysql
     requiredDuringSchedulingIgnoredDuringExecution:
       nodeSelectorTerms:
-      - matchExpressions:
-        - key: app
-          operator: In
-          values:
-          - mysql
+        - matchExpressions:
+            - key: app
+              operator: In
+              values:
+                - mysql
 
 tolerations:
-- key: "app"
-  operator: "Equal"
-  value: "mysql"
-  effect: "NoSchedule"
+  - key: "app"
+    operator: "Equal"
+    value: "mysql"
+    effect: "NoSchedule"
 
 secrets:
   MYSQL_ROOT_PASSWORD: "rootpassword123"
   MYSQL_DATABASE: "todoapp"
   MYSQL_USER: "user"
   MYSQL_PASSWORD: "password"
+
+serviceAccount:
+  name: todoapp-sa
+
+hpa:
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+rollingUpdate:
+  maxSurge: 1
+  maxUnavailable: 0
