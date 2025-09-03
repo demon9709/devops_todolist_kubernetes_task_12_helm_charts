@@ -2,8 +2,11 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ .Chart.Name }}-deployment
-  namespace: {{ .Values.namespace }}
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    app: {{ .Chart.Name }}
 spec:
+  replicas: {{ .Values.hpa.minReplicas }}
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -17,19 +20,30 @@ spec:
       labels:
         app: {{ .Chart.Name }}
     spec:
-      serviceAccountName: {{ .Values.serviceAccountName }}
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: {{ .Values.nodeAffinity.key }}
+                operator: In
+                values:
+{{- range .Values.nodeAffinity.values }}
+                - {{ . }}
+{{- end }}
       containers:
       - name: {{ .Chart.Name }}
-        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-        volumeMounts:
-        - name: data
-          mountPath: /app/data
-        - name: app-secrets-volume
-          mountPath: "/app/secrets"
-          readOnly: true
-        - name: app-config-volume
-          mountPath: "/app/configs"
-          readOnly: true
+        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        env:
+{{- range $key, $value := .Values.secrets }}
+        - name: {{ $key }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ $.Chart.Name }}-secret
+              key: {{ $key }}
+{{- end }}
         resources:
           requests:
             memory: {{ .Values.resources.requests.memory }}
@@ -37,53 +51,10 @@ spec:
           limits:
             memory: {{ .Values.resources.limits.memory }}
             cpu: {{ .Values.resources.limits.cpu }}
-        env:
-        {{- range $key, $_ := .Values.secrets }}
-        - name: {{ $key }}
-          valueFrom:
-            secretKeyRef:
-              name: {{ $.Chart.Name }}-secret
-              key: {{ $key }}
-        {{- end }}
-        {{- range $key, $_ := .Values.configs }}
-        - name: {{ $key }}
-          valueFrom:
-            configMapKeyRef:
-              name: {{ $.Chart.Name }}-config
-              key: {{ $key }}
-        {{- end }}
-        ports:
-        - containerPort: 8080
-        livenessProbe:
-          httpGet:
-            path: api/health
-            port: 8080
-          initialDelaySeconds: 60
-          periodSeconds: 5
-        readinessProbe:
-          httpGet:
-            path: api/ready
-            port: 8080
-          initialDelaySeconds: 5
-          periodSeconds: 5
+        volumeMounts:
+        - name: storage
+          mountPath: /data
       volumes:
-      - name: data
+      - name: storage
         persistentVolumeClaim:
           claimName: {{ .Chart.Name }}-pvc
-      - name: app-secrets-volume
-        secret:
-          secretName: {{ .Chart.Name }}-secret
-      - name: app-config-volume
-        configMap:
-          name: {{ .Chart.Name }}-config
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-            - matchExpressions:
-              - key: {{ .Values.affinity.key }}
-                operator: In
-                values:
-                  {{- range .Values.affinity.values }}
-                  - {{ . }}
-                  {{- end }}

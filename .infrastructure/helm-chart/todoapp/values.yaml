@@ -1,48 +1,49 @@
-namespace: todoapp
+namespace:
+  name: todoapp-ns
 
-serviceAccountName: todoapp-sa
+serviceAccount:
+  name: todoapp-sa
 
 image:
-  repository: yourrepo/todoapp
-  tag: latest
-
-secrets:
-  DJANGO_SECRET_KEY: "c2VjcmV0a2V5"         # base64 encoded
-  DB_NAME: "dG9kb2Ribg=="                   # base64 encoded
-  DB_USER: "dXNlcg=="                       # base64 encoded
-  DB_PASSWORD: "cGFzc3dvcmQ="               # base64 encoded
-
-configs:
-  DEBUG: "False"
-  ALLOWED_HOSTS: "localhost,127.0.0.1"
+  repository: nginx
+  tag: "1.21"
+  pullPolicy: IfNotPresent
 
 resources:
   requests:
-    cpu: "100m"
     memory: "128Mi"
+    cpu: "100m"
   limits:
-    cpu: "500m"
-    memory: "512Mi"
+    memory: "256Mi"
+    cpu: "200m"
 
 rollingUpdate:
   maxSurge: 1
   maxUnavailable: 0
 
-affinity:
-  key: "kubernetes.io/hostname"
-  values:
-    - "node1"
-
 hpa:
   minReplicas: 1
   maxReplicas: 5
-  cpu:
-    targetAverageUtilization: 50
-  memory:
-    targetAverageUtilization: 50
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
 
-pv:
-  capacity: "1Gi"
+persistentVolume:
+  capacity: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath: /data/todoapp
 
-pvc:
-  storage: "1Gi"
+persistentVolumeClaim:
+  storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+
+nodeAffinity:
+  key: "app"
+  values:
+    - "todoapp"
+
+secrets:
+  DATABASE_URL: "mysql://user:password@mysql:3306/todoapp"
+  API_KEY: "secret-api-key-123"
+  JWT_SECRET: "jwt-secret-token"
