@@ -1,0 +1,48 @@
+namespace: todoapp
+
+serviceAccountName: todoapp-sa
+
+image:
+  repository: yourrepo/todoapp
+  tag: latest
+
+secrets:
+  DJANGO_SECRET_KEY: "c2VjcmV0a2V5"         # base64 encoded
+  DB_NAME: "dG9kb2Ribg=="                   # base64 encoded
+  DB_USER: "dXNlcg=="                       # base64 encoded
+  DB_PASSWORD: "cGFzc3dvcmQ="               # base64 encoded
+
+configs:
+  DEBUG: "False"
+  ALLOWED_HOSTS: "localhost,127.0.0.1"
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+
+rollingUpdate:
+  maxSurge: 1
+  maxUnavailable: 0
+
+affinity:
+  key: "kubernetes.io/hostname"
+  values:
+    - "node1"
+
+hpa:
+  minReplicas: 1
+  maxReplicas: 5
+  cpu:
+    targetAverageUtilization: 50
+  memory:
+    targetAverageUtilization: 50
+
+pv:
+  capacity: "1Gi"
+
+pvc:
+  storage: "1Gi"
